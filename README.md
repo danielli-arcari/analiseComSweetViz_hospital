@@ -191,7 +191,9 @@ report_cancer = sv.analyze(cancer_data)
 report_cancer.show_html('eda_cancer.html')
 ```
 
-O relatório gerado está em [`imagens/eda_cancer_sweetviz.html`](imagens/eda_cancer_sweetviz.html). O GitHub não exibe arquivos HTML diretamente, então para visualizar é possível baixar o arquivo e abrir no navegador, ou acessar pela [visualização online](https://htmlpreview.github.io/?https://github.com/danielli-arcari/analiseComSweetViz_hospital/blob/main/imagens/eda_cancer_sweetviz.html). Você pode conferir o sweetviz em formato pdf, se preferir [eda_cancer_conteudoHTML.pdf] 
+O relatório gerado está em [`imagens/eda_cancer_sweetviz.html`](imagens/eda_cancer_sweetviz.html). O GitHub não exibe arquivos HTML diretamente, então para visualizar é possível baixar o arquivo e abrir no navegador, ou acessar pela [visualização online](https://htmlpreview.github.io/?https://github.com/danielli-arcari/analiseComSweetViz_hospital/blob/main/imagens/eda_cancer_sweetviz.html). 
+
+Você pode conferir o sweetviz em formato pdf: [`eda_cancer_conteudoHTML.pdf`](https://htmlpreview.github.io/?https://github.com/danielli-arcari/analiseComSweetViz_hospital/blob/main/imagens/eda_cancer_conteudoHTML.pdf) 
 
 ---
 
