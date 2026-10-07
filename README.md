@@ -10,9 +10,9 @@ Durante a aula, reproduzi o exercício proposto. No caminho, precisei resolver p
 
 Neste projeto:
 
-- identifiquei que os arquivos baixados não continham os dados, e sim um relatório HTML;
+- identifiquei que o arquivo original enviado junto ao vídeo da aula, embora nomeado como .csv, não se tratava de um csv mas sim de um relatório HTML;
 - localizei e validei a base original;
-- resolvi problemas de leitura do arquivo no Google Colab e no Google Drive;
+- resolvi problemas de leitura do arquivo no Google Colab;
 - adaptei o código para as versões atuais do Pandas;
 - tratei a coluna vazia que impedia a geração dos gráficos;
 - gerei o relatório automático de análise exploratória com o Sweetviz;
@@ -22,9 +22,7 @@ Neste projeto:
 
 ## O desafio
 
-O cenário proposto no exercício é o de um **hospital** que forneceu um conjunto de dados sobre diagnósticos de câncer de mama. O foco é extrair insights dos dados e se preparar para um Data Storytelling.
-
-Em reunião, os responsáveis pelo projeto pediram respostas para cinco perguntas:
+O cenário proposto no exercício é o de um **hospital** que forneceu um conjunto de dados sobre diagnósticos de câncer de mama. O foco é extrair insights dos dados e se preparar para um Data Storytelling. Em reunião, os responsáveis pelo projeto pediram respostas para cinco perguntas:
 
 1. Como estão distribuídas as amostras entre câncer benigno e maligno?
 2. Como está a distribuição dos dados das outras colunas numéricas?
@@ -38,9 +36,9 @@ As respostas estão na seção [Respostas às perguntas do cliente](#respostas-�
 
 ## Resumo da base
 
-A base utilizada é a **Breast Cancer Wisconsin (Diagnostic)**, disponível no Kaggle e no repositório de Machine Learning da UCI.
+A base utilizada é a **Breast Cancer Wisconsin (Diagnostic)**, disponível no Kaggle (https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data).
 
-Cada linha representa um exame de uma massa mamária. As medidas foram calculadas a partir de imagens digitalizadas de punção aspirativa por agulha fina (PAAF) e descrevem as características dos núcleos celulares.
+Cada linha representa um exame de uma massa mamária. As medidas foram calculadas a partir de imagens digitalizadas de punção aspirativa por agulha fina (PAAF) e descrevem as características dos núcleos celulares:
 
 - **569 registros** e **33 colunas**
 - `id`: identificador do exame
@@ -49,17 +47,17 @@ Cada linha representa um exame de uma massa mamária. As medidas foram calculada
   - `_mean`: média
   - `_se`: erro padrão
   - `_worst`: pior valor (média dos três maiores valores)
-- `Unnamed: 32`: coluna vazia, gerada por uma vírgula a mais no final de cada linha do CSV
+- `Unnamed: 32`: coluna vazia, gerada por uma vírgula a mais no final da linha de cabeçalho do CSV
 
 As 10 características são: raio (`radius`), textura (`texture`), perímetro (`perimeter`), área (`area`), suavidade (`smoothness`), compacidade (`compactness`), concavidade (`concavity`), pontos côncavos (`concave points`), simetria (`symmetry`) e dimensão fractal (`fractal_dimension`).
 
 ---
 
-## Problemas encontrados e correções aplicadas
+## Problema inicial: os arquivos do material
 
 ### 1. Os arquivos baixados não continham os dados
 
-Ao executar o primeiro gráfico, o Seaborn retornou o erro:
+Assisti a aula, baixei os arquivos que ela estavam, repliquei o código no colab. Mas, ao executar o primeiro gráfico, o Seaborn retornou o erro:
 
 ```
 ValueError: Could not interpret value `diagnosis` for `x`. An entry with this name does not appear in `data`.
@@ -71,11 +69,21 @@ Por isso o Pandas lia o arquivo como uma única coluna chamada `<!doctype html>`
 
 **Correção:** pelo conteúdo do relatório, identifiquei que a base era a Breast Cancer Wisconsin (Diagnostic), publicada no Kaggle. Obtive o arquivo original e validei que ele batia com o relatório: 569 linhas, 33 colunas, 357 diagnósticos benignos e 212 malignos.
 
+---
+
+## Problemas encontrados após inserir a base do Kaggle
+
+Com a base correta em mãos, o exercício ainda não rodou de primeira. Os problemas abaixo apareceram na sequência, cada um em uma etapa diferente do notebook.
+
 ### 2. O Google Drive converteu o CSV em planilha
 
-Ao subir o arquivo correto no Google Drive, ele foi convertido automaticamente em Google Sheets (`.gsheet`). Esse formato é apenas um atalho para a planilha online, e o Pandas não consegue lê-lo, o que gerou um `OSError`.
+**O que aconteceu:** ao subir o `cancer_data.csv` no Google Drive, ele foi convertido automaticamente em uma planilha do Google Sheets e passou a aparecer como `.gsheet`. Ao tentar ler esse arquivo com `pd.read_csv()`, o Colab retornou um `OSError`.
 
-**Correção:** passei a carregar o arquivo diretamente do computador para a sessão do Colab:
+**Por que aconteceu:** um arquivo `.gsheet` não contém os dados. Ele é apenas um atalho que aponta para a planilha armazenada na nuvem do Google, e o Pandas não tem o que ler ali. A conversão acontece porque o Drive tem a opção "Converter arquivos enviados para o formato do editor do Google Docs" ativada por padrão em muitas contas.
+
+Na primeira tentativa de contornar o problema, também passei o caminho do `.gsheet` dentro do `files.upload()`, mas essa função não recebe caminho: ela apenas abre uma janela para escolher um arquivo do computador.
+
+**Correção:** carregar o CSV diretamente do computador para a sessão do Colab, sem passar pelo Drive:
 
 ```python
 from google.colab import files
@@ -87,27 +95,40 @@ cancer_data = pd.read_csv(nome)
 cancer_data.head()
 ```
 
-As linhas com `nome` garantem que o código leia exatamente o arquivo enviado, mesmo que o Colab altere o nome dele (por exemplo, `cancer_data (1).csv`).
+As linhas com `nome` garantem que o código leia exatamente o arquivo enviado, mesmo que o Colab altere o nome dele (por exemplo, `cancer_data (1).csv`). Outra alternativa seria desativar a conversão automática nas configurações do Google Drive e subir o CSV novamente.
 
-### 3. A coluna vazia impedia a geração dos boxplots
+### 3. A coluna vazia `Unnamed: 32` quebrou os boxplots
 
-O loop de outliers gerou um gráfico vazio e depois o erro `ValueError`. A causa era a coluna `Unnamed: 32`, que não tem nenhum valor preenchido.
+**O que aconteceu:** o loop de outliers gerou os boxplots normalmente até chegar a um gráfico completamente vazio, com o eixo variando apenas de -0,04 a 0,04. Logo em seguida, o Matplotlib interrompeu a execução com um `ValueError`.
 
-**Correção:** remoção da coluna antes dos gráficos:
+**Por que aconteceu:** a linha de cabeçalho do CSV do Kaggle termina com uma vírgula sobrando. O Pandas interpreta isso como uma coluna a mais, sem nome, e a chama de `Unnamed: 32`. Essa coluna não tem nenhum valor preenchido nas 569 linhas. Como o loop de outliers exclui apenas `id` e `diagnosis`, ele tentou desenhar um boxplot de uma coluna vazia, e não há como calcular quartis sem dados.
+
+No loop de distribuição, o código do material compara as colunas com `' '` (um espaço em branco), o que não exclui essa coluna, porque o nome dela não é um espaço.
+
+**Correção:** remover a coluna antes de gerar os gráficos, sem alterar o restante do código do exercício:
 
 ```python
 cancer_data = cancer_data.drop(columns=["Unnamed: 32"])
 ```
 
-### 4. Mudança de comportamento do Pandas na correlação
+### 4. O `.corr()` não aceitou mais a coluna de texto
 
-No material original, o `.corr()` ignorava automaticamente a coluna de texto `diagnosis`, apenas exibindo um aviso (`FutureWarning`) de que isso mudaria. Nas versões atuais do Pandas o comportamento mudou e a coluna de texto passou a gerar erro.
+**O que aconteceu:** a célula da matriz de correlação, copiada do material, gerou erro ao calcular `cancer_data.corr()`.
 
-**Correção:** indicar explicitamente que apenas as colunas numéricas devem entrar no cálculo:
+**Por que aconteceu:** a coluna `diagnosis` contém texto (B e M), e não é possível calcular correlação com texto. Na versão do Pandas usada na gravação da aula, o `.corr()` ignorava essa coluna automaticamente e apenas exibia um aviso (`FutureWarning`) dizendo que esse comportamento ia mudar. Dá para ver esse aviso no próprio vídeo. Nas versões atuais, a mudança anunciada aconteceu, e a coluna de texto passou a gerar erro em vez de ser ignorada.
+
+**Correção:** indicar explicitamente que apenas as colunas numéricas devem entrar no cálculo, que é exatamente o que o aviso do vídeo recomendava. O resultado fica idêntico ao da aula:
 
 ```python
 correlation_matrix = cancer_data.corr(numeric_only=True)
 ```
+
+### Avisos que não eram erros
+
+Durante a execução também apareceram mensagens que parecem erro, mas não interrompem nada:
+
+- `<Figure size 640x480 with 0 Axes>`: aparece entre os gráficos porque o `plt.figure()` no final de cada volta do loop cria uma figura nova e vazia, preparando o espaço para o próximo gráfico.
+- `RuntimeWarning: More than 20 figures have been opened`: o Matplotlib avisa que muitas figuras foram abertas ao mesmo tempo, o que pode consumir memória. Como a base tem 30 variáveis numéricas, os loops geram mais de 20 gráficos de uma vez.
 
 ---
 
@@ -121,7 +142,7 @@ O código completo está no arquivo [`datavizusandopython_mod4_leega.py`](datavi
 sns.countplot(x="diagnosis", data = cancer_data)
 ```
 
-![Distribuição do diagnóstico](imagens/01_countplot_diagnosis.png)
+![Distribuição do diagnóstico](imagens/diagnosis.png)
 
 ### 2. Gráficos de distribuição
 
@@ -134,10 +155,6 @@ for column in cancer_data:
         plt.figure()
 ```
 
-Exemplo, `radius_mean`:
-
-![Distribuição de radius_mean](imagens/02_distribuicao_radius_mean.png)
-
 ### 3. Outliers
 
 Um boxplot para cada variável numérica.
@@ -149,10 +166,6 @@ for column in cancer_data:
        plt.figure()
 ```
 
-Exemplo, `area_mean`:
-
-![Boxplot de area_mean](imagens/03_boxplot_area_mean.png)
-
 ### 4. Matriz de correlação
 
 ```python
@@ -162,7 +175,7 @@ sns.heatmap(correlation_matrix,cbar=True, fmt = '.1f', annot=True, cmap = 'Blues
 plt.savefig('Correlation Heat Map')
 ```
 
-![Matriz de correlação](imagens/04_correlation_heat_map.png)
+![Matriz de correlação](imagens/Correlation%20Heat%20Map.png)
 
 ### 5. Relatório automático com Sweetviz
 
@@ -178,7 +191,7 @@ report_cancer = sv.analyze(cancer_data)
 report_cancer.show_html('eda_cancer.html')
 ```
 
-O relatório gerado está em [`eda_cancer.html`](eda_cancer.html). O GitHub não exibe arquivos HTML diretamente, então para visualizar é possível baixar o arquivo e abrir no navegador, ou acessar pela [visualização online](https://htmlpreview.github.io/?https://github.com/danielli-arcari/analise-exploratoria-cancer-mama-python/blob/main/eda_cancer.html).
+O relatório gerado está em [`imagens/eda_cancer_sweetviz.html`](imagens/eda_cancer_sweetviz.html). O GitHub não exibe arquivos HTML diretamente, então para visualizar é possível baixar o arquivo e abrir no navegador, ou acessar pela [visualização online](https://htmlpreview.github.io/?https://github.com/danielli-arcari/analiseComSweetViz_hospital/blob/main/imagens/eda_cancer_sweetviz.html).
 
 ---
 
@@ -268,7 +281,7 @@ Os tumores malignos têm, em média, células com área duas vezes maior e conto
 
 ### 5. Dashboard de análise exploratória para os médicos
 
-O dashboard foi gerado com o Sweetviz e está no arquivo [`eda_cancer.html`](eda_cancer.html) (detalhes na seção [Relatório automático com Sweetviz](#5-relatório-automático-com-sweetviz)).
+O dashboard foi gerado com o Sweetviz e está no arquivo [`eda_cancer_sweetviz.html`](imagens/eda_cancer_sweetviz.html) (detalhes na seção [Relatório automático com Sweetviz](#5-relatório-automático-com-sweetviz)).
 
 Ele reúne, em uma única página navegável, os conceitos de estatística descritiva aplicados a cada uma das variáveis: valores ausentes, valores distintos, mínimo, máximo, média, mediana, quartis, desvio padrão, assimetria e histograma. O painel de associações resume visualmente as correlações entre as variáveis.
 
@@ -295,10 +308,11 @@ Se eu tivesse que apresentar estes resultados ao hospital em poucos minutos, a h
 ```
 ├── README.md
 ├── datavizusandopython_mod4_leega.py   # código do exercício (exportado do Colab)
-├── eda_cancer.html                     # relatório gerado pelo Sweetviz
-├── dados/
-│   └── cancer_data.csv                 # base original
-└── imagens/                            # gráficos usados neste README
+├── cancer_data_kaggle.csv              # base original
+└── imagens/
+    ├── diagnosis.png                   # distribuição do diagnóstico
+    ├── Correlation Heat Map.png        # matriz de correlação
+    └── eda_cancer_sweetviz.html        # relatório gerado pelo Sweetviz
 ```
 
 ## Ferramentas utilizadas
